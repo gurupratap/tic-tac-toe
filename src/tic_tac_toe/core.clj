@@ -10,6 +10,9 @@
        (println (nth rows i))
        (recur (inc i))))))
 
+(defn is-board-full? [board]
+  (not (some #{"_"} board)))
+
 (defn mark-position [position sign board]
   (if (= (nth board position) "_")
     (assoc board position sign)
@@ -49,7 +52,9 @@
       (if (find-winner new-board move)
         (do (print-board new-board) 
             (println (format "Game Over - Player %s won" move)))
-        (play-game new-board)))))
+        (if (is-board-full? new-board)
+          (println "Game Over - Draw !!")
+          (play-game new-board))))))
 
 (defn -main
   "Starting point of the program"
