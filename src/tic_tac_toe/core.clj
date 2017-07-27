@@ -59,22 +59,40 @@
 
 (defn game-tree [board move turn]
   (loop [i 0 
-         available_moves (map first (filter #(= "_" (second %)) (map-indexed vector board)))]
+         available-moves (map first (filter #(= "_" (second %)) (map-indexed vector board)))]
     (println "")
-    (when (< i (count available_moves))
-      (print-board (mark-position (nth available_moves i) move board))
-      (recur (inc i) available_moves))))
+    (when (< i (count available-moves))
+      (print-board (mark-position (nth available-moves i) move board))
+      (recur (inc i) available-moves))))
 
 (defn get-game-tree [board move]
   (map first (filter #(= "_" (second %)) (map-indexed vector board))))
 
-(defn get-score [board position move player]
-  (let [new-board (mark-position position move board) winner (find-winner new-board move)]
+(defn get-score [board move player]
+  (let [winner (find-winner board move)]
     (if (nil? winner)
-      (when (is-board-full? new-board) 0)
+      (if (is-board-full? board)
+        0
+        (if (= move player)
+          (apply min (vals (get-next-move board (next-move board) player)))
+          (apply max (vals (get-next-move board (next-move board) player)))))
       (if (= winner player)
         10
         -10))))
+
+(defn get-next-move [board move player]
+  (loop [i 0 available-moves (get-game-tree board move) scores-map {}]
+    (if (< i (count available-moves))
+      (let [ position (nth available-moves i)
+            new-board (mark-position position move board)
+            score (get-score new-board move player)
+            new-scores-map (update-score-map position score scores-map new-board move player)]
+        (recur (inc i) available-moves new-scores-map))
+      scores-map)))
+
+(defn update-score-map [position score score-map board move player]
+  (if score
+    (assoc score-map position score)))
 
 (defn -main
   "Starting point of the program"
