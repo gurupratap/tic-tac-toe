@@ -56,6 +56,26 @@
           (println "Game Over - Draw !!")
           (play-game new-board))))))
 
+
+(defn game-tree [board move turn]
+  (loop [i 0 
+         available_moves (map first (filter #(= "_" (second %)) (map-indexed vector board)))]
+    (println "")
+    (when (< i (count available_moves))
+      (print-board (mark-position (nth available_moves i) move board))
+      (recur (inc i) available_moves))))
+
+(defn get-game-tree [board move]
+  (map first (filter #(= "_" (second %)) (map-indexed vector board))))
+
+(defn get-score [board position move player]
+  (let [new-board (mark-position position move board) winner (find-winner new-board move)]
+    (if (nil? winner)
+      (when (is-board-full? new-board) 0)
+      (if (= winner player)
+        10
+        -10))))
+
 (defn -main
   "Starting point of the program"
   [& args]
