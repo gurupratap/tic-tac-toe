@@ -43,19 +43,6 @@
   (if (= (:x (frequencies board)) (:o (frequencies board)))
          :x
          :o))
-(defn play-game [board]
-  (let [move (next-move board)]
-    (println move)
-    (print-board board)
-    (println "Enter position you want to fill ranging from 0 to 8")
-    (let [position (read-string (read-line)) new-board (mark-position position move board )]
-      (if (find-winner new-board move)
-        (do (print-board new-board) 
-            (println (format "Game Over - Player %s won" move)))
-        (if (is-board-full? new-board)
-          (println "Game Over - Draw !!")
-          (play-game new-board))))))
-
 
 (defn game-tree [board move turn]
   (loop [i 0 
@@ -68,19 +55,25 @@
 (defn get-game-tree [board move]
   (map first (filter #(= "_" (second %)) (map-indexed vector board))))
 
+(declare get-score-map-for-next-move)
+
+(defn update-score-map [position score score-map board move player]
+  (if score
+    (assoc score-map position score)))
+
 (defn get-score [board move player]
   (let [winner (find-winner board move)]
     (if (nil? winner)
       (if (is-board-full? board)
         0
         (if (= move player)
-          (apply min (vals (get-next-move board (next-move board) player)))
-          (apply max (vals (get-next-move board (next-move board) player)))))
+          (apply min (vals (get-score-map-for-next-move board (next-move board) player)))
+          (apply max (vals (get-score-map-for-next-move board (next-move board) player)))))
       (if (= winner player)
         10
         -10))))
 
-(defn get-next-move [board move player]
+(defn get-score-map-for-next-move [board move player]
   (loop [i 0 available-moves (get-game-tree board move) scores-map {}]
     (if (< i (count available-moves))
       (let [ position (nth available-moves i)
@@ -90,9 +83,31 @@
         (recur (inc i) available-moves new-scores-map))
       scores-map)))
 
-(defn update-score-map [position score score-map board move player]
-  (if score
-    (assoc score-map position score)))
+(defn get-keys [some-map value]
+  (keep #(when (= (val %) value)
+           (key %)) some-map))
+
+(defn get-auto-player-move [board]
+  (let [score-map (get-score-map-for-next-move board :o :o)]
+    (first (get-keys score-map (apply max (vals score-map))))))
+
+(defn get-next-move [move board]
+  (if(= move :x)
+    (read-string (read-line))
+    (get-auto-player-move board)))
+
+(defn play-game [board]
+  (let [move (next-move board)]
+    (println move)
+    (print-board board)
+    (println "Enter position you want to fill ranging from 0 to 8")
+    (let [position (get-next-move move board) new-board (mark-position position move board )]
+      (if (find-winner new-board move)
+        (do (print-board new-board) 
+            (println (format "Game Over - Player %s won" move)))
+        (if (is-board-full? new-board)
+          (println "Game Over - Draw !!")
+          (play-game new-board))))))
 
 (defn -main
   "Starting point of the program"
